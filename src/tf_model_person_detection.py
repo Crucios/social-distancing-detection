@@ -1,7 +1,7 @@
 import numpy as np
-import tensorflow as tf
 import cv2
 import time
+import torch
 
 def copy_attr(a, b, include=(), exclude=()):
     # Copy attributes from b to a, options to only include [...] and to exclude [...]
@@ -15,22 +15,14 @@ class Model:
     """
     Class that contains the model and all its functions
     """
-    def __init__(self, model_path="models/best.pt"):
-        """
-        Initialization function
-        @ model_path : path to the model 
-        """
+    def __init__(self, model_path="../models/best_10.pt"):
         """
         Loads Yolo5 model from pytorch hub.
         :return: Trained Pytorch model.
         """
-        model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=False, classes=1)
-        checkpoint_ = torch.load(model_path)['model']
-        model.load_state_dict(checkpoint_.state_dict())
+        self.model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+        # self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s', force_reload=True)
 
-        copy_attr(model, checkpoint_, include=('yaml', 'nc', 'hyp', 'names', 'stride'), exclude=())
-
-        self.model = model.fuse().autoshape()
 
     def predict(self,img):
         """
@@ -38,8 +30,12 @@ class Model:
         @ img : our img vector
         """
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-        img_exp = np.expand_dims(img, axis=0)
+        # img_exp = np.expand_dims(img, axis=0)
         # Pass the inputs and outputs to the session to get the results 
-        (boxes, scores, classes) = self.sess.run([self.detection_graph.get_tensor_by_name('detection_boxes:0'), self.detection_graph.get_tensor_by_name('detection_scores:0'), self.detection_graph.get_tensor_by_name('detection_classes:0')],feed_dict={self.detection_graph.get_tensor_by_name('image_tensor:0'): img_exp})
-        return (boxes, scores, classes)  
+        results = self.model(img)
+        boxes = results.xyxy[0][:,:4].numpy()
+        scores = results.xyxy[0][:,4].numpy()
+        print(boxes)
+        print(scores)
+        return (boxes, scores)  
 

@@ -18,7 +18,7 @@ BIG_CIRCLE = 60
 SMALL_CIRCLE = 3
 
 
-def get_human_box_detection(boxes,scores,classes,height,width):
+def get_human_box_detection(boxes,scores,height,width):
 	""" 
 	For each object detected, check if it is a human and if the confidence >> our threshold.
 	Return 2 coordonates necessary to build the box.
@@ -29,12 +29,12 @@ def get_human_box_detection(boxes,scores,classes,height,width):
 	@ width : of the image -> to get the real pixel value
 	"""
 	array_boxes = list() # Create an empty list
-	for i in range(boxes.shape[1]):
+	for i in range(boxes.shape[0]):
 		# If the class of the detected object is 1 and the confidence of the prediction is > 0.6
-		if int(classes[i]) == 1 and scores[i] > 0.75:
+		if scores[i] > 0.75:
 			# Multiply the X coordonnate by the height of the image and the Y coordonate by the width
 			# To transform the box value into pixel coordonate values.
-			box = [boxes[0,i,0],boxes[0,i,1],boxes[0,i,2],boxes[0,i,3]] * np.array([height, width, height, width])
+			box = [boxes[i,0],boxes[i,1],boxes[i,2],boxes[i,3]]
 			# Add the results converted to int
 			array_boxes.append((int(box[0]),int(box[1]),int(box[2]),int(box[3])))
 	return array_boxes
@@ -74,10 +74,10 @@ def change_color_on_topview(pair):
 	"""
 	Draw red circles for the designated pair of points 
 	"""
-	cv2.circle(bird_view_img, (pair[0][0],pair[0][1]), BIG_CIRCLE, COLOR_RED, 2)
-	cv2.circle(bird_view_img, (pair[0][0],pair[0][1]), SMALL_CIRCLE, COLOR_RED, -1)
-	cv2.circle(bird_view_img, (pair[1][0],pair[1][1]), BIG_CIRCLE, COLOR_RED, 2)
-	cv2.circle(bird_view_img, (pair[1][0],pair[1][1]), SMALL_CIRCLE, COLOR_RED, -1)
+	cv2.circle(bird_view_img, (int(pair[0][0]),int(pair[0][1])), BIG_CIRCLE, COLOR_RED, 2)
+	cv2.circle(bird_view_img, (int(pair[0][0]),int(pair[0][1])), SMALL_CIRCLE, COLOR_RED, -1)
+	cv2.circle(bird_view_img, (int(pair[1][0]),int(pair[1][1])), BIG_CIRCLE, COLOR_RED, 2)
+	cv2.circle(bird_view_img, (int(pair[1][0]),int(pair[1][1])), SMALL_CIRCLE, COLOR_RED, -1)
 
 def draw_rectangle(corner_points):
 	# Draw rectangle box over the delimitation area
@@ -181,28 +181,28 @@ while True:
 		frame = imutils.resize(frame, width=int(size_frame))
 		
 		# Make the predictions for this frame
-		(boxes, scores, classes) =  model.predict(frame)
+		(boxes, scores) =  model.predict(frame)
 
 		# Get the human detected in the frame and return the 2 points to build the bounding box  
-		array_boxes_detected = get_human_box_detection(boxes,scores[0].tolist(),classes[0].tolist(),frame.shape[0],frame.shape[1])
+		array_boxes_detected = get_human_box_detection(boxes,scores,frame.shape[0],frame.shape[1])
 		
 		# Both of our lists that will contain the centroïds coordonates and the ground points
 		array_centroids,array_groundpoints = get_centroids_and_groundpoints(array_boxes_detected)
 
 		# Use the transform matrix to get the transformed coordonates
 		transformed_downoids = compute_point_perspective_transformation(matrix,array_groundpoints)
-		
+# 		transformed_downoids = imgOutput
 		# Show every point on the top view image 
 		for point in transformed_downoids:
 			x,y = point
-			cv2.circle(bird_view_img, (x,y), BIG_CIRCLE, COLOR_GREEN, 2)
-			cv2.circle(bird_view_img, (x,y), SMALL_CIRCLE, COLOR_GREEN, -1)
+			cv2.circle(bird_view_img, (int(x),int(y)), BIG_CIRCLE, COLOR_GREEN, 2)
+			cv2.circle(bird_view_img, (int(x),int(y)), SMALL_CIRCLE, COLOR_GREEN, -1)
 
 		# Check if 2 or more people have been detected (otherwise no need to detect)
 		if len(transformed_downoids) >= 2:
 			for index,downoid in enumerate(transformed_downoids):
 				if not (downoid[0] > width or downoid[0] < 0 or downoid[1] > height+200 or downoid[1] < 0 ):
-					cv2.rectangle(frame,(array_boxes_detected[index][1],array_boxes_detected[index][0]),(array_boxes_detected[index][3],array_boxes_detected[index][2]),COLOR_GREEN,2)
+					cv2.rectangle(frame,(array_boxes_detected[index][0],array_boxes_detected[index][1]),(array_boxes_detected[index][2],array_boxes_detected[index][3]),COLOR_GREEN,2)
 
 			# Iterate over every possible 2 by 2 between the points combinations 
 			list_indexes = list(itertools.combinations(range(len(transformed_downoids)), 2))
@@ -215,8 +215,8 @@ while True:
 						# Get the equivalent indexes of these points in the original frame and change the color to red
 						index_pt1 = list_indexes[i][0]
 						index_pt2 = list_indexes[i][1]
-						cv2.rectangle(frame,(array_boxes_detected[index_pt1][1],array_boxes_detected[index_pt1][0]),(array_boxes_detected[index_pt1][3],array_boxes_detected[index_pt1][2]),COLOR_RED,2)
-						cv2.rectangle(frame,(array_boxes_detected[index_pt2][1],array_boxes_detected[index_pt2][0]),(array_boxes_detected[index_pt2][3],array_boxes_detected[index_pt2][2]),COLOR_RED,2)
+						cv2.rectangle(frame,(array_boxes_detected[index_pt1][0],array_boxes_detected[index_pt1][1]),(array_boxes_detected[index_pt1][2],array_boxes_detected[index_pt1][3]),COLOR_RED,2)
+						cv2.rectangle(frame,(array_boxes_detected[index_pt2][0],array_boxes_detected[index_pt2][1]),(array_boxes_detected[index_pt2][2],array_boxes_detected[index_pt2][3]),COLOR_RED,2)
 
 
 	# Draw the green rectangle to delimitate the detection zone
@@ -241,3 +241,5 @@ while True:
 	# Break the loop
 	if key == ord("q"):
 		break
+    
+cv2.destroyAllWindows()
