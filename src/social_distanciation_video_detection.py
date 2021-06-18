@@ -134,11 +134,23 @@ distance_minimum = int(distance_minimum)
 ######################################################
 vs = cv2.VideoCapture(video_path)
 output_video_1,output_video_2 = None,None
+# Get video properties
+fps = vs.get(cv2.CAP_PROP_FPS)
 width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT))
 model = Model()
+
+# Define the codec and create VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+if os.path.exists('../output/video.avi'):
+    os.remove('../output/video.avi')
+out = cv2.VideoWriter('../output/video.avi', fourcc, fps, (width, height))
+
+# Iterate through frames
+# vidlen = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
+    
 # Loop until the end of the video stream
-while True:	
+while vs.isOpened():	
 	# Load the frame
 	(frame_exists, frame) = vs.read()
 	# Test if it has reached the end of the video
@@ -151,25 +163,19 @@ while True:
 
 	# Draw the green rectangle to delimitate the detection zone
 	draw_rectangle(corner_points)
+    
 	# Show both images	
-# 	cv2.imshow("Bird view", bird_view_img)
 	cv2.imshow("Original picture", frame)
 
 
 	key = cv2.waitKey(1) & 0xFF
 
-	# Write the both outputs video to a local folders
-	if output_video_1 is None and output_video_2 is None:
-		fourcc1 = cv2.VideoWriter_fourcc(*"MJPG")
-		output_video_1 = cv2.VideoWriter("../output/video.avi", fourcc1, 25,(frame.shape[1], frame.shape[0]), True)
-		fourcc2 = cv2.VideoWriter_fourcc(*"MJPG")
-# 		output_video_2 = cv2.VideoWriter("../output/bird_view.avi", fourcc2, 25,(bird_view_img.shape[1], bird_view_img.shape[0]), True)
-	elif output_video_1 is not None and output_video_2 is not None:
-		output_video_1.write(frame)
-# 		output_video_2.write(bird_view_img)
+	out.write(frame)
 
 	# Break the loop
 	if key == ord("q"):
 		break
-    
+
+vs.release()
+out.release()    
 cv2.destroyAllWindows()
