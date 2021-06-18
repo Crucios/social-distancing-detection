@@ -38,4 +38,7 @@ class Model:
         print(boxes)
         print(scores)
         return (boxes, scores)  
+    
+    def predict_real(self,img):
+        return self.model(img)
 
