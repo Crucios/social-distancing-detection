@@ -97,6 +97,7 @@ for section in cfg:
 	size_frame = cfg["image_parameters"]["size_frame"]
 print(bcolors.OKGREEN +" Done : [ Config file loaded ] ..."+bcolors.ENDC )
 
+region = np.float32([corner_points[1], corner_points[3], corner_points[2], corner_points[0]])
 
 ######################################### 
 #		     Select the model 			#
@@ -145,7 +146,6 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')
 if os.path.exists('../output/video.avi'):
     os.remove('../output/video.avi')
 out = cv2.VideoWriter('../output/video.avi', fourcc, fps, (width, height))
-
 # Iterate through frames
 # vidlen = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
     
@@ -159,7 +159,7 @@ while vs.isOpened():
 	else:
 		# Make the predictions for this frame
        
-		frame = bird_detect_people_on_frame(frame, 0.75, distance_minimum, width, height, model)
+		frame = bird_detect_people_on_frame(frame, 0.75, distance_minimum, width, height, model, region)
 
 	# Draw the green rectangle to delimitate the detection zone
 	draw_rectangle(corner_points)
